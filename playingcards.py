@@ -16,14 +16,17 @@ class Card():
     def reveal(self):
         self.hidden = False
 
+    def hide(self):
+        self.hidden = True
+
     def is_hidden(self):
-        return(self.hidden)
+        return self.hidden
 
     def __str__(self):
-        return(f"{self.name} of {self.suit_name}s")
+        return f"{self.name} of {self.suit_name}s"
 
     def __repr__(self):
-        return(f"{self.__class__.__name__}{self.value, self.suit}")
+        return f"{self.__class__.__name__}{self.value, self.suit}"
 
 
 class CardPile():
@@ -31,7 +34,8 @@ class CardPile():
         self.cards = []
 
     def draw(self):
-        return(self.cards.pop())
+        if len(self) > 0:
+            return self.cards.pop()
 
     def add(self, card):
         self.cards.append(card)
@@ -41,7 +45,8 @@ class CardPile():
             self.add(card)
 
     def get_top_card(self):
-        return(self.cards[-1])
+        if len(self) > 0:
+            return self[-1]
 
     def __str__(self):
         string = ""
@@ -56,7 +61,16 @@ class CardPile():
         return string
 
     def __len__(self):
-        return(len(self.cards))
+        return len(self.cards)
+
+    def __getitem__(self, index):
+        return self.cards[index]
+
+    def __setitem__(self, index, item):
+        self.cards[index] = item
+
+    def __reversed__(self):
+        return self.cards[::-1]
 
 
 class Deck(CardPile):
@@ -67,7 +81,7 @@ class Deck(CardPile):
                 self.cards.append(Card(card, suit))
 
     def shuffle(self):
-        random.shuffle(self.cards)
+        random.shuffle(self)
 
 
 class Tableu(CardPile):
@@ -79,7 +93,7 @@ class Tableu(CardPile):
         stack = []
         for card in range(amount):
             stack.append(self.draw())
-        return(list(reversed(stack)))
+        return list(reversed(stack))
 
     def move_stack(self, tableu, amount):
         tableu.add_pile(self.pick_up(amount))
