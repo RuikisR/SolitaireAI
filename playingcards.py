@@ -71,6 +71,7 @@ class Deck(CardPile):
 
 
 class Tableu(CardPile):
+    # Class for game tableus
     def __init__(self):
         CardPile.__init__(self)
 
