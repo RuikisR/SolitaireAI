@@ -17,7 +17,7 @@ class Solitaire():
         self.deck.shuffle()
         for i, tableu in enumerate(self.tableus):
             self.move_cards(self.deck, tableu, i + 1)
-            tableu.get_top_card().reveal()
+            tableu.get_top_card().toggle_hidden()
             # Calculates number of cards for each tableu and reveals top card
 
         self.waste = CardPile()
@@ -26,13 +26,13 @@ class Solitaire():
     def draw(self):
         # Reveals top card of deck and places it on top of waste
         self.waste.add(self.deck.draw())
-        self.waste.get_top_card().reveal()
+        self.waste.get_top_card().toggle_hidden()
 
     def reset_waste(self):
         # Resets the waste back to the deck
         if len(self.deck) == 0:
             for card in self.waste:
-                card.hide()
+                card.toggle_hidden()
             self.move_cards(self.waste, self.deck, len(self.waste))
 
     def move_cards(self, src_pile, dst_pile, amount):
@@ -43,9 +43,8 @@ class Solitaire():
 
 # Test bench
 game = Solitaire()
-print(game.deck)
+
 for i in range(24):
     game.draw()
-print(game.waste)
+[print(card.is_hidden()) for card in game.waste]
 game.reset_waste()
-print(game.deck)

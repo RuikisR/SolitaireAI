@@ -13,14 +13,11 @@ class Card():
         self.suit_name = SUITS[suit]
         self.hidden = True
 
-    def reveal(self):
-        self.hidden = False
-
-    def hide(self):
-        self.hidden = True
-
     def is_hidden(self):
         return self.hidden
+
+    def toggle_hidden(self):
+        self.hidden = not self.is_hidden()
 
     def __str__(self):
         return f"{self.name} of {self.suit_name}s"
