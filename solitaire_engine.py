@@ -7,8 +7,8 @@ class Solitaire():
         self.deck.shuffle()
 
         self.foundations = []
-        for i, suit in enumerate(SUITS):
-            self.foundations.append(Foundation(SUITS.get(i)))
+        for suit in SUITS:
+            self.foundations.append(CardPile())
             # Initialise each tableu as an empty card pile
 
         self.tableus = []
@@ -33,7 +33,7 @@ class Solitaire():
         # 0 -> Deck
         # 1 -> Waste
         # 2-7 -> Tableus
-        # 8-11 -> Foundations (Ordered as Spade, Heart, Club, Diamond)
+        # 8-11 -> Foundations
 
     def draw(self):
         # Reveals top card of deck and places it on top of waste
@@ -69,13 +69,25 @@ class Solitaire():
         if len(self.waste) > 0:
             src_id = 1
             hand_card = self.waste.get_top_card()
+
             for i, tableu in enumerate(self.tableus):
                 dst_id = i + 2
                 tableu_top = tableu.get_top_card()
-                if (hand_card.type is not tableu_top.type and
-                        hand_card.value is tableu_top.value - 1):
+                if len(tableu) == 0 and hand_card.value == 13:
+                    valid_moves.append((src_id, dst_id, 1))
+                elif (hand_card.type != tableu_top.type
+                        and hand_card.value == tableu_top.value - 1):
                     valid_moves.append((src_id, dst_id, 1))
                     # Checking valid moves from waste to a tableu
+
+            for i, foundation in enumerate(self.foundations):
+                dst_id = i + 8
+                foundation_top = foundation.get_top_card()
+                if (len(foundation) == 0 and hand_card.value == 1
+                        or len(foundation) > 0
+                        and hand_card.value == foundation_top.value + 1):
+                    valid_moves.append((src_id, dst_id, 1))
+                    # Checking valid moves from waste to foundations
 
         return valid_moves
 
@@ -85,5 +97,5 @@ game = Solitaire()
 game.draw()
 print(f"Waste: {game.waste.get_top_card()}")
 for i, tableu in enumerate(game.tableus):
-    print(f"Tableu Id {i + 2}: {tableu.get_top_card()}")
+    print(f"Tableu id {i + 2}: {tableu.get_top_card()}")
 print([move for move in game.get_valid_moves()])

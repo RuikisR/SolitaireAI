@@ -96,8 +96,3 @@ class Tableu(CardPile):
 
     def move_stack(self, tableu, amount):
         tableu.add_pile(self.cards.pick_up(amount))
-
-class Foundation(CardPile):
-    def __init__(self, suit):
-        CardPile.__init__(self)
-        self.suit = suit
