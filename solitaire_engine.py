@@ -4,9 +4,11 @@ from playingcards import *
 class Solitaire():
     def __init__(self):
         self.deck = Deck()
+        self.deck.shuffle()
+
         self.foundations = []
-        for suit in SUITS:
-            self.foundations.append(CardPile())
+        for i, suit in enumerate(SUITS):
+            self.foundations.append(Foundation(SUITS.get(i)))
             # Initialise each tableu as an empty card pile
 
         self.tableus = []
@@ -14,7 +16,6 @@ class Solitaire():
             self.tableus.append(Tableu())
             # 7 empty tableus
 
-        self.deck.shuffle()
         for i, tableu in enumerate(self.tableus):
             self.move_cards(self.deck, tableu, i + 1)
             tableu.get_top_card().toggle_hidden()
@@ -22,6 +23,17 @@ class Solitaire():
 
         self.waste = CardPile()
         # Empty pile for waste
+
+        self.id_map = {0: self.deck, 1: self.waste}
+        self.id_map.update((i + 2, tableu)
+                           for i, tableu in enumerate(self.tableus))
+        self.id_map.update((i + 8, foundation)
+                           for i, foundation in enumerate(self.foundations))
+        # Id mapping for game locations
+        # 0 -> Deck
+        # 1 -> Waste
+        # 2-7 -> Tableus
+        # 8-11 -> Foundations (Ordered as Spade, Heart, Club, Diamond)
 
     def draw(self):
         # Reveals top card of deck and places it on top of waste
@@ -40,11 +52,38 @@ class Solitaire():
             for card in range(amount):
                 dst_pile.add(src_pile.draw())
 
+    def get_valid_moves(self):
+        # Moves take the form of tuples
+        # (src_id, dst_id, number_of_cards) as given in id_map
+        valid_moves = []
+
+        # Deck moves
+        if len(self.deck) > 0:
+            valid_moves.append((0, 1, 1))
+            # If deck is not empty, drawing a card to waste is valid
+        elif len(self.waste) > 0:
+            valid_moves.append((1, 0, 0))
+            # Special case allowing for resetting of waste back to deck
+
+        # Waste moves
+        if len(self.waste) > 0:
+            src_id = 1
+            hand_card = self.waste.get_top_card()
+            for i, tableu in enumerate(self.tableus):
+                dst_id = i + 2
+                tableu_top = tableu.get_top_card()
+                if (hand_card.type is not tableu_top.type and
+                        hand_card.value is tableu_top.value - 1):
+                    valid_moves.append((src_id, dst_id, 1))
+                    # Checking valid moves from waste to a tableu
+
+        return valid_moves
+
 
 # Test bench
 game = Solitaire()
-
-for i in range(24):
-    game.draw()
-[print(card.is_hidden()) for card in game.waste]
-game.reset_waste()
+game.draw()
+print(f"Waste: {game.waste.get_top_card()}")
+for i, tableu in enumerate(game.tableus):
+    print(f"Tableu Id {i + 2}: {tableu.get_top_card()}")
+print([move for move in game.get_valid_moves()])

@@ -11,6 +11,8 @@ class Card():
         self.name = CARDS[value]
         self.suit = suit
         self.suit_name = SUITS[suit]
+        self.type = self.suit % 2
+        # Assumes SUIT suits alternate type eg. Black and Red
         self.hidden = True
 
     def is_hidden(self):
@@ -94,3 +96,8 @@ class Tableu(CardPile):
 
     def move_stack(self, tableu, amount):
         tableu.add_pile(self.cards.pick_up(amount))
+
+class Foundation(CardPile):
+    def __init__(self, suit):
+        CardPile.__init__(self)
+        self.suit = suit
