@@ -39,11 +39,11 @@ class CardPile():
 
     def add_pile(self, pile):
         for card in pile:
-            self.add(card)
+            self.cards.add(card)
 
     def get_top_card(self):
-        if len(self) > 0:
-            return self[-1]
+        if len(self.cards) > 0:
+            return self.cards[-1]
 
     def __str__(self):
         string = ""
@@ -78,7 +78,7 @@ class Deck(CardPile):
                 self.cards.append(Card(card, suit))
 
     def shuffle(self):
-        random.shuffle(self)
+        random.shuffle(self.cards)
 
 
 class Tableu(CardPile):
@@ -89,8 +89,8 @@ class Tableu(CardPile):
     def pick_up(self, amount):
         stack = []
         for card in range(amount):
-            stack.append(self.draw())
+            stack.append(self.cards.draw())
         return list(reversed(stack))
 
     def move_stack(self, tableu, amount):
-        tableu.add_pile(self.pick_up(amount))
+        tableu.add_pile(self.cards.pick_up(amount))
