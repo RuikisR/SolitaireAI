@@ -11,16 +11,15 @@ class Card():
         self.name = CARDS[value]
         self.suit = suit
         self.suit_name = SUITS[suit]
-        self.hidden = True
-
-    def reveal(self):
-        self.hidden = False
-
-    def hide(self):
+        self.type = self.suit % 2
+        # Assumes SUIT suits alternate type eg. Black and Red
         self.hidden = True
 
     def is_hidden(self):
         return self.hidden
+
+    def toggle_hidden(self):
+        self.hidden = not self.is_hidden()
 
     def __str__(self):
         return f"{self.name} of {self.suit_name}s"
@@ -42,11 +41,11 @@ class CardPile():
 
     def add_pile(self, pile):
         for card in pile:
-            self.add(card)
+            self.cards.add(card)
 
     def get_top_card(self):
-        if len(self) > 0:
-            return self[-1]
+        if len(self.cards) > 0:
+            return self.cards[-1]
 
     def __str__(self):
         string = ""
@@ -81,7 +80,7 @@ class Deck(CardPile):
                 self.cards.append(Card(card, suit))
 
     def shuffle(self):
-        random.shuffle(self)
+        random.shuffle(self.cards)
 
 
 class Tableu(CardPile):
@@ -92,8 +91,8 @@ class Tableu(CardPile):
     def pick_up(self, amount):
         stack = []
         for card in range(amount):
-            stack.append(self.draw())
+            stack.append(self.cards.draw())
         return list(reversed(stack))
 
     def move_stack(self, tableu, amount):
-        tableu.add_pile(self.pick_up(amount))
+        tableu.add_pile(self.cards.pick_up(amount))
