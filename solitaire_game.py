@@ -21,11 +21,6 @@ class Solitaire():
             self.tableus.append(Tableu())
             # 7 empty tableus
 
-        for i, tableu in enumerate(self.tableus):
-            self.move_cards(self.deck, tableu, i + 1)
-            tableu.get_top_card().toggle_hidden()
-            # Calculates number of cards for each tableu and reveals top card
-
         self.waste = CardPile()
         # Empty pile for waste
 
@@ -39,6 +34,12 @@ class Solitaire():
         # 1 -> Waste
         # 2-8 -> Tableus
         # 9-12 -> Foundations
+
+    def init(self):
+        for i, tableu in enumerate(self.tableus):
+            self.move_cards(self.deck, tableu, i + 1)
+            tableu.get_top_card().toggle_hidden()
+            # Calculates number of cards for each tableu and reveals top card
 
     def draw_card(self):
         # Reveals top card of deck and places it on top of waste
@@ -145,9 +146,10 @@ class Solitaire():
 
 
 # Test bench
-game = Solitaire()
-game.draw_card()
-print(f"Waste: {game.waste.get_top_card()}")
-for i, tableu in enumerate(game.tableus):
-    print(f"Tableu id {i + 2}: {tableu.get_top_card()}")
-print([move for move in game.get_valid_moves()])
+if __name__ == "__main__":
+    game = Solitaire()
+    game.draw_card()
+    print(f"Waste: {game.waste.get_top_card()}")
+    for i, tableu in enumerate(game.tableus):
+        print(f"Tableu id {i + 2}: {tableu.get_top_card()}")
+    print([move for move in game.get_valid_moves()])
