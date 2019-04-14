@@ -1,5 +1,10 @@
 from playingcards import *
 
+TABLEU_OFFSET = 2
+FOUNDATION_OFFSET = 9
+KING = 13
+ACE = 1
+
 
 class Solitaire():
     def __init__(self):
@@ -25,17 +30,17 @@ class Solitaire():
         # Empty pile for waste
 
         self.id_map = {0: self.deck, 1: self.waste}
-        self.id_map.update((i + 2, tableu)
+        self.id_map.update((i + TABLEU_OFFSET, tableu)
                            for i, tableu in enumerate(self.tableus))
-        self.id_map.update((i + 8, foundation)
+        self.id_map.update((i + FOUNDATION_OFFSET, foundation)
                            for i, foundation in enumerate(self.foundations))
         # Id mapping for game locations
         # 0 -> Deck
         # 1 -> Waste
-        # 2-7 -> Tableus
-        # 8-11 -> Foundations
+        # 2-8 -> Tableus
+        # 9-12 -> Foundations
 
-    def draw(self):
+    def draw_card(self):
         # Reveals top card of deck and places it on top of waste
         self.waste.add(self.deck.draw())
         self.waste.get_top_card().toggle_hidden()
@@ -71,30 +76,77 @@ class Solitaire():
             hand_card = self.waste.get_top_card()
 
             for i, tableu in enumerate(self.tableus):
-                dst_id = i + 2
                 tableu_top = tableu.get_top_card()
-                if len(tableu) == 0 and hand_card.value == 13:
+                if len(tableu) == 0 and hand_card.value == KING:
+                    dst_id = i + TABLEU_OFFSET
                     valid_moves.append((src_id, dst_id, 1))
                 elif (hand_card.type != tableu_top.type
                         and hand_card.value == tableu_top.value - 1):
+                    dst_id = i + TABLEU_OFFSET
                     valid_moves.append((src_id, dst_id, 1))
                     # Checking valid moves from waste to a tableu
 
             for i, foundation in enumerate(self.foundations):
-                dst_id = i + 8
                 foundation_top = foundation.get_top_card()
-                if (len(foundation) == 0 and hand_card.value == 1
+                if (len(foundation) == 0 and hand_card.value == ACE
                         or len(foundation) > 0
                         and hand_card.value == foundation_top.value + 1):
+                    dst_id = i + FOUNDATION_OFFSET
                     valid_moves.append((src_id, dst_id, 1))
                     # Checking valid moves from waste to foundations
+
+        # Foundation moves
+        for i, foundation in enumerate(self.foundations):
+            if len(foundation) > 0:
+                src_id = i + FOUNDATION_OFFSET
+                foundation_top = foundation.get_top_card()
+
+                for j, tableu in enumerate(self.tableus):
+                    tableu_top = tableu.get_top_card()
+                    if (len(tableu) > 0
+                        and foundation_top.type != tableu_top.type
+                            and foundation_top.value == tableu_top.value - 1):
+                        dst_id = j + TABLEU_OFFSET
+                        valid_moves.append((src_id, dst_id, 1))
+                        # Valid moves from foundations to tableus
+
+        # Tableu moves
+        for i, tableu in enumerate(self.tableus):
+            if len(tableu) > 0:
+                src_id = i + TABLEU_OFFSET
+                tableu_top = tableu.get_top_card()
+
+                for j, foundation in enumerate(self.foundations):
+                    foundation_top = foundation.get_top_card()
+                    if (len(foundation) > 0
+                            and tableu_top.suit == foundation_top.suit
+                            and tableu_top.value == foundation_top.value + 1
+                            or len(foundation) == 0
+                            and tableu_top.value == ACE):
+                        dst_id = j + FOUNDATION_OFFSET
+                        valid_moves.append((src_id, dst_id, 1))
+                        # Valid moves from tableu to foundation
+
+                for j, card in enumerate(tableu):
+                    if not card.hidden:
+                        card_amount = len(tableu) - j
+                        for k, other_tableu in enumerate(self.tableus):
+                            if i != k:
+                                other_tableu_top = other_tableu.get_top_card()
+                                if (card.type != other_tableu_top.type
+                                        and card.value ==
+                                        other_tableu_top.value - 1):
+                                    dst_id = k + TABLEU_OFFSET
+                                    valid_moves.append(
+                                        (src_id, dst_id, card_amount))
+                                    # Valid tableu to tableu moves
 
         return valid_moves
 
 
 # Test bench
 game = Solitaire()
-game.draw()
+game.draw_card()
 print(f"Waste: {game.waste.get_top_card()}")
 for i, tableu in enumerate(game.tableus):
     print(f"Tableu id {i + 2}: {tableu.get_top_card()}")
