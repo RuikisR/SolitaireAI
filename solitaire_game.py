@@ -38,13 +38,13 @@ class Solitaire():
     def init(self):
         for i, tableu in enumerate(self.tableus):
             self.move_cards(self.deck, tableu, i + 1)
-            tableu.get_top_card().toggle_hidden()
+            tableu.top_card().toggle_hidden()
             # Calculates number of cards for each tableu and reveals top card
 
     def draw_card(self):
         # Reveals top card of deck and places it on top of waste
         self.waste.add(self.deck.draw())
-        self.waste.get_top_card().toggle_hidden()
+        self.waste.top_card().toggle_hidden()
 
     def reset_waste(self):
         # Resets the waste back to the deck
@@ -58,7 +58,7 @@ class Solitaire():
             for card in range(amount):
                 dst_pile.add(src_pile.draw())
 
-    def get_valid_moves(self):
+    def valid_moves(self):
         # Moves take the form of tuples
         # (src_id, dst_id, number_of_cards) as given in id_map
         valid_moves = []
@@ -74,10 +74,10 @@ class Solitaire():
         # Waste moves
         if len(self.waste) > 0:
             src_id = 1
-            hand_card = self.waste.get_top_card()
+            hand_card = self.waste.top_card()
 
             for i, tableu in enumerate(self.tableus):
-                tableu_top = tableu.get_top_card()
+                tableu_top = tableu.top_card()
                 if len(tableu) == 0 and hand_card.value == KING:
                     dst_id = i + TABLEU_OFFSET
                     valid_moves.append((src_id, dst_id, 1))
@@ -88,7 +88,7 @@ class Solitaire():
                     # Checking valid moves from waste to a tableu
 
             for i, foundation in enumerate(self.foundations):
-                foundation_top = foundation.get_top_card()
+                foundation_top = foundation.top_card()
                 if (len(foundation) == 0 and hand_card.value == ACE
                         or len(foundation) > 0
                         and hand_card.value == foundation_top.value + 1):
@@ -100,10 +100,10 @@ class Solitaire():
         for i, foundation in enumerate(self.foundations):
             if len(foundation) > 0:
                 src_id = i + FOUNDATION_OFFSET
-                foundation_top = foundation.get_top_card()
+                foundation_top = foundation.top_card()
 
                 for j, tableu in enumerate(self.tableus):
-                    tableu_top = tableu.get_top_card()
+                    tableu_top = tableu.top_card()
                     if (len(tableu) > 0
                         and foundation_top.type != tableu_top.type
                             and foundation_top.value == tableu_top.value - 1):
@@ -115,10 +115,10 @@ class Solitaire():
         for i, tableu in enumerate(self.tableus):
             if len(tableu) > 0:
                 src_id = i + TABLEU_OFFSET
-                tableu_top = tableu.get_top_card()
+                tableu_top = tableu.top_card()
 
                 for j, foundation in enumerate(self.foundations):
-                    foundation_top = foundation.get_top_card()
+                    foundation_top = foundation.top_card()
                     if (len(foundation) > 0
                             and tableu_top.suit == foundation_top.suit
                             and tableu_top.value == foundation_top.value + 1
@@ -133,7 +133,7 @@ class Solitaire():
                         card_amount = len(tableu) - j
                         for k, other_tableu in enumerate(self.tableus):
                             if i != k:
-                                other_tableu_top = other_tableu.get_top_card()
+                                other_tableu_top = other_tableu.top_card()
                                 if (card.type != other_tableu_top.type
                                         and card.value ==
                                         other_tableu_top.value - 1):
@@ -149,7 +149,7 @@ class Solitaire():
 if __name__ == "__main__":
     game = Solitaire()
     game.draw_card()
-    print(f"Waste: {game.waste.get_top_card()}")
+    print(f"Waste: {game.waste.top_card()}")
     for i, tableu in enumerate(game.tableus):
-        print(f"Tableu id {i + 2}: {tableu.get_top_card()}")
+        print(f"Tableu id {i + 2}: {tableu.top_card()}")
     print([move for move in game.get_valid_moves()])

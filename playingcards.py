@@ -43,7 +43,7 @@ class CardPile():
         for card in pile:
             self.cards.add(card)
 
-    def get_top_card(self):
+    def top_card(self):
         if len(self.cards) > 0:
             return self.cards[-1]
 
