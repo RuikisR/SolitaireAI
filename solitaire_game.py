@@ -51,7 +51,8 @@ class Solitaire():
         if len(self.deck) == 0:
             for card in self.waste:
                 card.toggle_hidden()
-            self.move_cards(self.waste, self.deck, len(self.waste))
+        self.deck = reversed(self.waste)
+        self.waste.clear()
 
     def move_cards(self, src_pile, dst_pile, amount):
         if len(src_pile) >= amount:
@@ -154,6 +155,36 @@ class Solitaire():
                                         (src_id, dst_id, card_amount))
                                     # Valid tableu to tableu moves
         return valid_moves
+
+    def make_move(self, move):
+        if move in self.valid_moves():
+            src_id, dst_id, amount = move
+            if TABLEU_OFFSET <= dst_id < FOUNDATION_OFFSET:
+                dst = self.tableus[dst_id - TABLEU_OFFSET]
+            elif FOUNDATION_OFFSET <= dst_id <= (FOUNDATION_OFFSET
+                                                 + len(self.foundations)):
+                dst = self.foundations[dst_id - FOUNDATION_OFFSET]
+
+            if src_id == 0:
+                self.draw_card()
+
+            elif src_id == 1:
+                src = self.waste
+                dst.add(src.draw())
+
+            elif TABLEU_OFFSET <= src_id < FOUNDATION_OFFSET:
+                src = self.tableus[src_id - TABLEU_OFFSET]
+                if dst_id >= FOUNDATION_OFFSET:
+                    dst.add(src.draw())
+                else:
+                    src.move_stack(dst, amount)
+                if src.top_card().hidden:
+                    src.top_card().toggle_hidden()
+
+            elif FOUNDATION_OFFSET <= src_id <= (FOUNDATION_OFFSET
+                                                 + len(self.foundations)):
+                src = self.foundations[src_id - FOUNDATION_OFFSET]
+                dst.add(src.draw())
 
 
 # Test bench

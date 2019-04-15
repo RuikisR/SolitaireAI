@@ -70,7 +70,7 @@ def draw_foundations(game, sprites):
             pygame.draw.rect(screen, BLACK, foundation_sprite, RECT_WEIGHT)
         else:
             screen.blit(card_images[game.foundations[i].top_card()],
-                        i + FOUNDATION_OFFSET, 0)
+                        foundation_sprite)
 
 
 def draw_tableus(game, sprites):
@@ -109,6 +109,12 @@ def clicked_id(sprites):
             print(sprite)
 
 
+def console_input():
+    print("Input a move in the form src_id, dst_id, amount")
+    console_input = tuple(int(x.strip()) for x in input().split(', '))
+    return console_input
+
+
 if __name__ == "__main__":
     while(True):
         screen_sprites = {}
@@ -125,5 +131,7 @@ if __name__ == "__main__":
             else:
                 mouse_pos = pygame.mouse.get_pos()
                 clicked_card = clicked_id(screen_sprites)
-
+        else:
+            usr_input = console_input()
+            solitaire.make_move(usr_input)
         clock.tick(60)

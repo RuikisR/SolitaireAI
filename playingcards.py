@@ -30,7 +30,7 @@ class Card():
 
 class CardPile():
     def __init__(self):
-        self.cards = []
+        self.clear()
 
     def draw(self):
         if len(self) > 0:
@@ -41,7 +41,10 @@ class CardPile():
 
     def add_pile(self, pile):
         for card in pile:
-            self.cards.add(card)
+            self.add(card)
+
+    def clear(self):
+        self.cards = []
 
     def top_card(self):
         if len(self.cards) > 0:
@@ -91,8 +94,9 @@ class Tableu(CardPile):
     def pick_up(self, amount):
         stack = []
         for card in range(amount):
-            stack.append(self.cards.draw())
+            stack.append(self.draw())
         return list(reversed(stack))
 
     def move_stack(self, tableu, amount):
-        tableu.add_pile(self.cards.pick_up(amount))
+        tableu.add_pile(self.pick_up(amount))
+        # Moves given number of cards to given tableu
