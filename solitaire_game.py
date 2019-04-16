@@ -10,6 +10,7 @@ class Solitaire():
     def __init__(self):
         self.deck = Deck()
         self.deck.shuffle()
+        self.won = False
 
         self.foundations = []
         for suit in SUITS:
@@ -43,15 +44,18 @@ class Solitaire():
 
     def draw_card(self):
         # Reveals top card of deck and places it on top of waste
-        self.waste.add(self.deck.draw())
-        self.waste.top_card().toggle_hidden()
+        if len(self.deck) > 0:
+            self.waste.add(self.deck.draw())
+            self.waste.top_card().toggle_hidden()
+        else:
+            self.reset_waste()
 
     def reset_waste(self):
         # Resets the waste back to the deck
         if len(self.deck) == 0:
             for card in self.waste:
                 card.toggle_hidden()
-        self.deck = reversed(self.waste)
+        self.deck.add_pile(reversed(self.waste))
         self.waste.clear()
 
     def move_cards(self, src_pile, dst_pile, amount):
@@ -65,17 +69,15 @@ class Solitaire():
         valid_moves = (self.valid_deck_moves()
                        + self.valid_foundation_moves()
                        + self.valid_tableu_moves())
+        if len(valid_moves) == 0:
+            self.won = True
         return valid_moves
 
     def valid_deck_moves(self):
         valid_moves = []
         # Deck moves
-        if len(self.deck) > 0:
+        if len(self.deck) > 0 or len(self.waste) > 0:
             valid_moves.append((0, 1, 1))
-            # If deck is not empty, drawing a card to waste is valid
-        elif len(self.waste) > 0:
-            valid_moves.append((1, 0, 0))
-            # Special case allowing for resetting of waste back to deck
 
         # Waste moves
         if len(self.waste) > 0:
@@ -84,10 +86,10 @@ class Solitaire():
 
             for i, tableu in enumerate(self.tableus):
                 tableu_top = tableu.top_card()
-                if len(tableu) == 0 and hand_card.value == KING:
+                if not tableu_top and hand_card.value == KING:
                     dst_id = i + TABLEU_OFFSET
                     valid_moves.append((src_id, dst_id, 1))
-                elif (len(tableu) > 0
+                elif (tableu_top
                         and hand_card.type != tableu_top.type
                         and hand_card.value == tableu_top.value - 1):
                     dst_id = i + TABLEU_OFFSET
@@ -147,7 +149,12 @@ class Solitaire():
                         for k, other_tableu in enumerate(self.tableus):
                             if i != k:
                                 other_tableu_top = other_tableu.top_card()
-                                if (card.type != other_tableu_top.type
+                                if not other_tableu_top and card.value == KING:
+                                    dst_id = k + TABLEU_OFFSET
+                                    valid_moves.append(
+                                        (src_id, dst_id, card_amount))
+                                elif (other_tableu_top
+                                        and card.type != other_tableu_top.type
                                         and card.value ==
                                         other_tableu_top.value - 1):
                                     dst_id = k + TABLEU_OFFSET
@@ -178,7 +185,7 @@ class Solitaire():
                     dst.add(src.draw())
                 else:
                     src.move_stack(dst, amount)
-                if src.top_card().hidden:
+                if len(src) > 0 and src.top_card().hidden:
                     src.top_card().toggle_hidden()
 
             elif FOUNDATION_OFFSET <= src_id <= (FOUNDATION_OFFSET

@@ -30,41 +30,44 @@ for card in solitaire.deck:
         os.path.join(DATA, f"card{card.suit_name}s{card.name}.png"))
 solitaire.init()
 
-game_finished = False
 screen_sprites = {}
+
+move_src = None
+move_dst = None
+move_amount = None
 
 
 # Displaying the cards and updating the the sprite list
-def display_game(game, sprites):
+def display_game(game):
     screen.fill(GREEN)
-    draw_deck(game, sprites)
-    draw_foundations(game, sprites)
-    draw_tableus(game, sprites)
+    draw_deck(game)
+    draw_foundations(game)
+    draw_tableus(game)
     pygame.display.update()
 
 
-def draw_deck(game, sprites):
+def draw_deck(game):
     deck_sprite = pygame.Rect((MARGIN, MARGIN), CARD_SIZE)
-    sprites["deck"] = (deck_sprite, 0, 0)
+    screen_sprites["deck"] = (deck_sprite, 0, 0)
     if len(game.deck) > 0:
         screen.blit(CARD_BACK, deck_sprite)
     else:
         pygame.draw.rect(screen, BLACK, deck_sprite, RECT_WEIGHT)
 
     waste_sprite = pygame.Rect((MARGIN * 2 + CARD_WIDTH, MARGIN), CARD_SIZE)
-    sprites["waste"] = (waste_sprite, 1, 0)
+    screen_sprites["waste"] = (waste_sprite, 1, 0)
     if len(game.waste) > 0:
         screen.blit(card_images[game.waste.top_card()], waste_sprite)
     else:
         pygame.draw.rect(screen, BLACK, waste_sprite, RECT_WEIGHT)
 
 
-def draw_foundations(game, sprites):
+def draw_foundations(game):
     for i, foundation in enumerate(game.foundations):
         sprite_x = MARGIN * (5 + i) + CARD_WIDTH * (4 + i)
         foundation_sprite = pygame.Rect((sprite_x, MARGIN), CARD_SIZE)
-        sprites[f"foundation({i})"] = (foundation_sprite,
-                                       i + FOUNDATION_OFFSET, 0)
+        screen_sprites[f"foundation({i})"] = (foundation_sprite,
+                                              i + FOUNDATION_OFFSET, 0)
 
         if len(foundation) == 0:
             pygame.draw.rect(screen, BLACK, foundation_sprite, RECT_WEIGHT)
@@ -73,7 +76,7 @@ def draw_foundations(game, sprites):
                         foundation_sprite)
 
 
-def draw_tableus(game, sprites):
+def draw_tableus(game):
     for i, tableu in enumerate(game.tableus):
         sprite_x = MARGIN * (2 + i) + CARD_WIDTH * (1 + i)
 
@@ -81,8 +84,8 @@ def draw_tableus(game, sprites):
             sprite_y = 2 * MARGIN + CARD_HEIGHT
             empty_tableu = pygame.Rect((sprite_x, sprite_y), CARD_SIZE)
             pygame.draw.rect(screen, BLACK, empty_tableu, RECT_WEIGHT)
-            sprites[f"empty_tableu({i})"] = (empty_tableu, i +
-                                             TABLEU_OFFSET, 0)
+            screen_sprites[f"empty_tableu({i})"] = (empty_tableu, i +
+                                                    TABLEU_OFFSET, 0)
 
         for j, card in enumerate(tableu):
             sprite_y = MARGIN * (2 + j) + CARD_HEIGHT
@@ -94,19 +97,19 @@ def draw_tableus(game, sprites):
                 tableu_sprite = pygame.Rect((sprite_x, sprite_y),
                                             (CARD_WIDTH, MARGIN))
 
-            sprites[f"tableu({i}, {j})"] = (tableu_sprite,
-                                            i + TABLEU_OFFSET, j)
+            screen_sprites[f"tableu({i}, {j})"] = (tableu_sprite,
+                                                   i + TABLEU_OFFSET, j)
             if card.hidden:
                 screen.blit(CARD_BACK, tableu_sprite)
             else:
                 screen.blit(card_images[card], tableu_sprite)
 
 
-def clicked_id(sprites):
+def clicked_id():
     mouse_pos = pygame.mouse.get_pos()
-    for sprite in sprites.values():
+    for sprite in screen_sprites.values():
         if (sprite[0].collidepoint(mouse_pos)):
-            print(sprite)
+            return (sprite[1], sprite[2])
 
 
 def console_input():
@@ -115,12 +118,33 @@ def console_input():
     return console_input
 
 
+def get_move(game, clicked_card):
+    global move_src
+    global move_dst
+    global move_amount
+    if not move_src:
+        move_src = clicked_card[0]
+        if move_src == 0:
+            move_dst = 1
+            move_amount = 1
+            return (move_src, move_dst, move_amount)
+        elif (move_src < TABLEU_OFFSET or move_src >= FOUNDATION_OFFSET):
+            move_amount = 1
+        else:
+            move_amount = (len(game.tableus[move_src - TABLEU_OFFSET])
+                           - clicked_card[1])
+    elif not move_dst:
+        move_dst = clicked_card[0]
+        return (move_src, move_dst, move_amount)
+
+
 if __name__ == "__main__":
     while(True):
         screen_sprites = {}
-        display_game(solitaire, screen_sprites)
+        display_game(solitaire)
         pygame.event.pump()
         event = pygame.event.wait()
+        game_finished = solitaire.won
         if event.type == QUIT:
             pygame.display.quit()
             quit()
@@ -130,8 +154,14 @@ if __name__ == "__main__":
                 solitaire.init()
             else:
                 mouse_pos = pygame.mouse.get_pos()
-                clicked_card = clicked_id(screen_sprites)
-        else:
-            usr_input = console_input()
-            solitaire.make_move(usr_input)
+                clicked_card = clicked_id()
+                move = None
+                if clicked_card:
+                    move = get_move(solitaire, clicked_card)
+                print(move_src, move_dst, move_amount)
+                if move:
+                    solitaire.make_move(move)
+                    move_src = None
+                    move_dst = None
+                    move_amount = None
         clock.tick(60)
