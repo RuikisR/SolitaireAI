@@ -179,7 +179,9 @@ if __name__ == "__main__":
                 move = None
                 if clicked_card:
                     move = get_move(solitaire, clicked_card)
-                print(move_src, move_dst, move_amount)
+                else:
+                    move_src = None
+                    highlight_selection = None
                 if move:
                     solitaire.make_move(move)
                     move_src = None
