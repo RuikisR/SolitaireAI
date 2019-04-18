@@ -9,8 +9,10 @@ INITIAL_HEIGHT = 900
 INITAL_WIDTH = 1600
 GREEN = (0, 100, 0)
 BLACK = (0, 0, 0)
+GREY = (180, 180, 180)
 MARGIN = 30
 RECT_WEIGHT = 3
+HIGHLIGHT_WEIGHT = 5
 DATA = "assets/cards"
 CARD_BACK = pygame.image.load(os.path.join(DATA, "cardBack_blue5.png"))
 CARD_SIZE = CARD_BACK.get_rect().size
@@ -32,6 +34,8 @@ solitaire.init()
 
 screen_sprites = {}
 
+highlight_selection = None
+
 move_src = None
 move_dst = None
 move_amount = None
@@ -43,6 +47,8 @@ def display_game(game):
     draw_deck(game)
     draw_foundations(game)
     draw_tableus(game)
+    if highlight_selection:
+        pygame.draw.rect(screen, GREY, highlight_selection, HIGHLIGHT_WEIGHT)
     pygame.display.update()
 
 
@@ -105,11 +111,23 @@ def draw_tableus(game):
                 screen.blit(card_images[card], tableu_sprite)
 
 
+def highlight(selection, amount):
+    global highlight_selection
+    if selection[1] < TABLEU_OFFSET or selection[1] >= FOUNDATION_OFFSET:
+        highlight_selection = selection[0]
+    else:
+        selection_width = CARD_WIDTH
+        selection_height = CARD_HEIGHT + (amount - 1) * MARGIN
+        highlight_selection = pygame.Rect(selection[0].x, selection[0].y,
+                                          selection_width, selection_height)
+        print(selection_width, selection_height)
+
+
 def clicked_id():
     mouse_pos = pygame.mouse.get_pos()
     for sprite in screen_sprites.values():
         if (sprite[0].collidepoint(mouse_pos)):
-            return (sprite[1], sprite[2])
+            return sprite
 
 
 def console_input():
@@ -119,11 +137,11 @@ def console_input():
 
 
 def get_move(game, clicked_card):
-    global move_src
-    global move_dst
-    global move_amount
+    global move_src, move_dst, move_amount
+    global highlight_selection
+
     if not move_src:
-        move_src = clicked_card[0]
+        move_src = clicked_card[1]
         if move_src == 0:
             move_dst = 1
             move_amount = 1
@@ -132,9 +150,12 @@ def get_move(game, clicked_card):
             move_amount = 1
         else:
             move_amount = (len(game.tableus[move_src - TABLEU_OFFSET])
-                           - clicked_card[1])
+                           - clicked_card[2])
+            print(move_amount)
+        highlight(clicked_card, move_amount)
     elif not move_dst:
-        move_dst = clicked_card[0]
+        move_dst = clicked_card[1]
+        highlight_selection = None
         return (move_src, move_dst, move_amount)
 
 
