@@ -2,7 +2,7 @@ import pygame
 from pygame.locals import *
 import os
 import solitaire_game
-from solitaire_game import TABLEU_OFFSET, FOUNDATION_OFFSET
+from solitaire_game import TABLEAU_OFFSET, FOUNDATION_OFFSET
 
 
 INITIAL_HEIGHT = 900
@@ -46,7 +46,7 @@ def display_game(game):
     screen.fill(GREEN)
     draw_deck(game)
     draw_foundations(game)
-    draw_tableus(game)
+    draw_tableaus(game)
     if highlight_selection:
         pygame.draw.rect(screen, GREY, highlight_selection, HIGHLIGHT_WEIGHT)
     pygame.display.update()
@@ -82,38 +82,38 @@ def draw_foundations(game):
                         foundation_sprite)
 
 
-def draw_tableus(game):
-    for i, tableu in enumerate(game.tableus):
+def draw_tableaus(game):
+    for i, tableau in enumerate(game.tableaus):
         sprite_x = MARGIN * (2 + i) + CARD_WIDTH * (1 + i)
 
-        if len(tableu) == 0:
+        if len(tableau) == 0:
             sprite_y = 2 * MARGIN + CARD_HEIGHT
-            empty_tableu = pygame.Rect((sprite_x, sprite_y), CARD_SIZE)
-            pygame.draw.rect(screen, BLACK, empty_tableu, RECT_WEIGHT)
-            screen_sprites[f"empty_tableu({i})"] = (empty_tableu, i +
-                                                    TABLEU_OFFSET, 0)
+            empty_tableau = pygame.Rect((sprite_x, sprite_y), CARD_SIZE)
+            pygame.draw.rect(screen, BLACK, empty_tableau, RECT_WEIGHT)
+            screen_sprites[f"empty_tableau({i})"] = (empty_tableau, i +
+                                                     TABLEAU_OFFSET, 0)
 
-        for j, card in enumerate(tableu):
+        for j, card in enumerate(tableau):
             sprite_y = MARGIN * (2 + j) + CARD_HEIGHT
 
-            if card is tableu[-1]:
-                tableu_sprite = pygame.Rect((sprite_x, sprite_y), CARD_SIZE)
+            if card is tableau[-1]:
+                tableau_sprite = pygame.Rect((sprite_x, sprite_y), CARD_SIZE)
 
             else:
-                tableu_sprite = pygame.Rect((sprite_x, sprite_y),
-                                            (CARD_WIDTH, MARGIN))
+                tableau_sprite = pygame.Rect((sprite_x, sprite_y),
+                                             (CARD_WIDTH, MARGIN))
 
-            screen_sprites[f"tableu({i}, {j})"] = (tableu_sprite,
-                                                   i + TABLEU_OFFSET, j)
+            screen_sprites[f"tableau({i}, {j})"] = (tableau_sprite,
+                                                    i + TABLEAU_OFFSET, j)
             if card.hidden:
-                screen.blit(CARD_BACK, tableu_sprite)
+                screen.blit(CARD_BACK, tableau_sprite)
             else:
-                screen.blit(card_images[card], tableu_sprite)
+                screen.blit(card_images[card], tableau_sprite)
 
 
 def highlight(selection, amount):
     global highlight_selection
-    if selection[1] < TABLEU_OFFSET or selection[1] >= FOUNDATION_OFFSET:
+    if selection[1] < TABLEAU_OFFSET or selection[1] >= FOUNDATION_OFFSET:
         highlight_selection = selection[0]
     else:
         selection_width = CARD_WIDTH
@@ -146,10 +146,10 @@ def get_move(game, clicked_card):
             move_dst = 1
             move_amount = 1
             return (move_src, move_dst, move_amount)
-        elif (move_src < TABLEU_OFFSET or move_src >= FOUNDATION_OFFSET):
+        elif (move_src < TABLEAU_OFFSET or move_src >= FOUNDATION_OFFSET):
             move_amount = 1
         else:
-            move_amount = (len(game.tableus[move_src - TABLEU_OFFSET])
+            move_amount = (len(game.tableaus[move_src - TABLEAU_OFFSET])
                            - clicked_card[2])
             print(move_amount)
         highlight(clicked_card, move_amount)

@@ -86,8 +86,8 @@ class Deck(CardPile):
         random.shuffle(self.cards)
 
 
-class Tableu(CardPile):
-    # Class for game tableus
+class Tableau(CardPile):
+    # Class for game tableaus
     def __init__(self):
         CardPile.__init__(self)
 
@@ -97,6 +97,6 @@ class Tableu(CardPile):
             stack.append(self.draw())
         return list(reversed(stack))
 
-    def move_stack(self, tableu, amount):
-        tableu.add_pile(self.pick_up(amount))
-        # Moves given number of cards to given tableu
+    def move_stack(self, tableau, amount):
+        tableau.add_pile(self.pick_up(amount))
+        # Moves given number of cards to given tableau
