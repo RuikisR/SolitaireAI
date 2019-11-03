@@ -1,4 +1,5 @@
 from playingcards import *
+import copy
 
 TABLEAU_OFFSET = 2
 FOUNDATION_OFFSET = 9
@@ -23,24 +24,30 @@ class Solitaire():
             # 7 empty tableus
 
         self.waste = CardPile()
+
+        self.valid_moves = []
         # Empty pile for waste
 
+        ''' Not Used but could be useful
         self.id_map = {0: self.deck, 1: self.waste}
         self.id_map.update((i + TABLEAU_OFFSET, tableau)
                            for i, tableau in enumerate(self.tableaus))
         self.id_map.update((i + FOUNDATION_OFFSET, foundation)
                            for i, foundation in enumerate(self.foundations))
+        '''
+
         # Id mapping for game locations
         # 0 -> Deck
         # 1 -> Waste
         # 2-8 -> Tableaus
         # 9-12 -> Foundations
 
-    def init(self):
+    def deal_game(self):
         for i, tableau in enumerate(self.tableaus):
             self.move_cards(self.deck, tableau, i + 1)
             tableau.top_card().toggle_hidden()
             # Calculates number of cards for each tableau and reveals top card
+        self.update_valid_moves()
 
     def draw_card(self):
         # Reveals top card of deck and places it on top of waste
@@ -63,15 +70,14 @@ class Solitaire():
             for card in range(amount):
                 dst_pile.add(src_pile.draw())
 
-    def valid_moves(self):
+    def update_valid_moves(self):
         # Moves take the form of tuples
         # (src_id, dst_id, number_of_cards) as given in id_map
-        valid_moves = (self.valid_deck_moves()
-                       + self.valid_foundation_moves()
-                       + self.valid_tableau_moves())
-        if len(valid_moves) == 0:
+        self.valid_moves = (self.valid_deck_moves()
+                            + self.valid_foundation_moves()
+                            + self.valid_tableau_moves())
+        if len(self.valid_moves) == 0:
             self.won = True
-        return valid_moves
 
     def valid_deck_moves(self):
         valid_moves = []
@@ -99,8 +105,9 @@ class Solitaire():
             for i, foundation in enumerate(self.foundations):
                 foundation_top = foundation.top_card()
                 if (len(foundation) == 0 and hand_card.value == ACE
-                        or len(foundation) > 0
-                        and hand_card.value == foundation_top.value + 1):
+                        or (len(foundation) > 0
+                            and hand_card.value == foundation_top.value + 1
+                            and hand_card.suit == foundation_top.suit)):
                     dst_id = i + FOUNDATION_OFFSET
                     valid_moves.append((src_id, dst_id, 1))
                     # Checking valid moves from waste to foundations
@@ -165,7 +172,7 @@ class Solitaire():
         return valid_moves
 
     def make_move(self, move):
-        if move in self.valid_moves():
+        if move in self.valid_moves:
             src_id, dst_id, amount = move
             if TABLEAU_OFFSET <= dst_id < FOUNDATION_OFFSET:
                 dst = self.tableaus[dst_id - TABLEAU_OFFSET]
@@ -193,14 +200,63 @@ class Solitaire():
                                                  + len(self.foundations)):
                 src = self.foundations[src_id - FOUNDATION_OFFSET]
                 dst.add(src.draw())
+        self.update_valid_moves()
+
+    def get_revealed_cards(self):
+        revealed_cards = []
+        revealed_cards += self.deck.get_revealed_cards()
+        revealed_cards += self.waste.get_revealed_cards()
+        for tableau in self.tableaus:
+            revealed_cards += tableau.get_revealed_cards()
+        for foundation in self.foundations:
+            revealed_cards += foundation.get_revealed_cards()
+        return revealed_cards
+
+    def get_hidden_cards(self):
+        hidden_cards = Deck()
+        revealed_cards = self.get_revealed_cards()
+        for card in revealed_cards:
+            hidden_cards.pick_card(card)
+        return hidden_cards
+
+    def min_copy(self):
+        instance = Solitaire()
+        instance.deck = copy.deepcopy(self.deck)
+        instance.waste = copy.deepcopy(self.waste)
+        instance.foundations = copy.deepcopy(self.foundations)
+        for i, tableau in enumerate(self.tableaus):
+            for card in tableau:
+                if card.is_hidden():
+                    instance.tableaus[i].add(Card())
+                else:
+                    instance.tableaus[i].add(copy.deepcopy(card))
+        return instance
+
+    def __str__(self):
+        string = "---Game Setup---\n"
+        string += "\nDeck:\n"
+        for card in self.deck:
+            string += f"{card} - hidden: {card.is_hidden()}\n"
+        string += "\nWaste:\n"
+        for card in self.waste:
+            string += f"{card} - hidden: {card.is_hidden()}\n"
+        for index, tableau in enumerate(self.tableaus):
+            string += f"\nTableau {index}:\n"
+            for card in tableau:
+                string += f"{card} - hidden: {card.is_hidden()}\n"
+        for index, foundation in enumerate(self.foundations):
+            string += f"\nFoundation {index}:\n"
+            for card in foundation:
+                string += f"{card} - hidden: {card.is_hidden()}\n"
+        return string
 
 
 # Test bench
 if __name__ == "__main__":
     game = Solitaire()
-    game.init()
+    game.deal_game()
     game.draw_card()
-    print(f"Waste: {game.waste.top_card()}")
-    for i, tableau in enumerate(game.tableaus):
-        print(f"Tableau id {i + 2}: {tableau.top_card()}")
-    print([move for move in game.valid_moves()])
+    print(game)
+    thing = game.min_copy()
+    print(thing)
+    print(thing.get_hidden_cards())

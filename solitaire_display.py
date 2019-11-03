@@ -30,7 +30,7 @@ card_images = {}  # Mapping each card to its image
 for card in solitaire.deck:
     card_images[card] = pygame.image.load(
         os.path.join(DATA, f"card{card.suit_name}s{card.name}.png"))
-solitaire.init()
+solitaire.deal_game()
 
 screen_sprites = {}
 
@@ -44,11 +44,13 @@ move_amount = None
 # Displaying the cards and updating the the sprite list
 def display_game(game):
     screen.fill(GREEN)
-    draw_deck(game)
-    draw_foundations(game)
-    draw_tableaus(game)
-    if highlight_selection:
-        pygame.draw.rect(screen, GREY, highlight_selection, HIGHLIGHT_WEIGHT)
+    if not game.won:
+        draw_deck(game)
+        draw_foundations(game)
+        draw_tableaus(game)
+        if highlight_selection:
+            pygame.draw.rect(screen, GREY, highlight_selection,
+                             HIGHLIGHT_WEIGHT)
     pygame.display.update()
 
 
@@ -117,10 +119,11 @@ def highlight(selection, amount):
         highlight_selection = selection[0]
     else:
         selection_width = CARD_WIDTH
+        if amount == 0:
+            amount = 1
         selection_height = CARD_HEIGHT + (amount - 1) * MARGIN
         highlight_selection = pygame.Rect(selection[0].x, selection[0].y,
                                           selection_width, selection_height)
-        print(selection_width, selection_height)
 
 
 def clicked_id():
@@ -151,19 +154,33 @@ def get_move(game, clicked_card):
         else:
             move_amount = (len(game.tableaus[move_src - TABLEAU_OFFSET])
                            - clicked_card[2])
-            print(move_amount)
         highlight(clicked_card, move_amount)
     elif not move_dst:
         move_dst = clicked_card[1]
         highlight_selection = None
-        return (move_src, move_dst, move_amount)
+        if move_dst == move_src:
+            quick_move(game, move_src, move_amount)
+            move_src = None
+            move_dst = None
+            move_amount = None
+        else:
+            return (move_src, move_dst, move_amount)
+
+
+def quick_move(game, src, amount):
+    possible_moves = []
+    for move in game.valid_moves:
+        if move[0] == src and move[2] == amount:
+            possible_moves.append(move)
+    if len(possible_moves) >= 1:
+        game.make_move(possible_moves[0])
 
 
 if __name__ == "__main__":
     while(True):
         screen_sprites = {}
         display_game(solitaire)
-        pygame.event.pump()
+        # pygame.event.pump()
         event = pygame.event.wait()
         game_finished = solitaire.won
         if event.type == QUIT:
@@ -172,7 +189,12 @@ if __name__ == "__main__":
         elif event.type == MOUSEBUTTONDOWN:
             if game_finished:
                 solitaire = solitaire_game.Solitaire()
-                solitaire.init()
+                card_images = {}  # Mapping each card to its image
+                for card in solitaire.deck:
+                    target = (os.path.join(
+                              DATA, f"card{card.suit_name}s{card.name}.png"))
+                    card_images[card] = (pygame.image.load(target))
+                solitaire.deal_game()
             else:
                 mouse_pos = pygame.mouse.get_pos()
                 clicked_card = clicked_id()

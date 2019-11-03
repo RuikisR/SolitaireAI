@@ -6,23 +6,39 @@ CARDS = {1: "A", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
 
 
 class Card():
-    def __init__(self, value, suit):
+    def __init__(self, value=None, suit=None, hidden=True):
         self.value = value
-        self.name = CARDS[value]
         self.suit = suit
-        self.suit_name = SUITS[suit]
-        self.type = self.suit % 2
-        # Assumes SUIT suits alternate type eg. Black and Red
-        self.hidden = True
+        if value is not None and suit is not None:
+            self.name = CARDS[value]
+            self.suit_name = SUITS[suit]
+            self.type = self.suit % 2
+            # Assumes SUIT suits alternate type eg. Black and Red
+            self.known = False
+        else:
+            self.name = None
+            self.suit_name = None
+            self.type = None
+            self.known = True
+        self.hidden = hidden
 
     def is_hidden(self):
         return self.hidden
+
+    def is_known(self):
+        return self.known
+
+    def make_known(self, value, suit, hidden):
+        self.__init__(value, suit, hidden)
 
     def toggle_hidden(self):
         self.hidden = not self.is_hidden()
 
     def __str__(self):
-        return f"{self.name} of {self.suit_name}s"
+        if self.value is not None and self.suit is not None:
+            return f"{self.name} of {self.suit_name}s"
+        else:
+            return "Unknown card"
 
     def __repr__(self):
         return f"{self.__class__.__name__}{self.value, self.suit}"
@@ -49,6 +65,29 @@ class CardPile():
     def top_card(self):
         if len(self.cards) > 0:
             return self.cards[-1]
+
+    def get_revealed_cards(self):
+        revealed_cards = []
+        if len(self.cards) > 0:
+            for card in self.cards:
+                if not card.is_hidden():
+                    revealed_cards.append(card)
+        return revealed_cards
+
+    def get_hidden_cards(self):
+        hidden_cards = []
+        if len(self.cards) > 0:
+            for card in self.cards:
+                if card.is_hidden():
+                    hidden_cards.append(card)
+        return hidden_cards
+
+    def pick_card(self, target_card):
+        for card in self.cards:
+            if target_card.value == card.value:
+                if target_card.suit == card.suit:
+                    self.cards.remove(card)
+                    return card
 
     def __str__(self):
         string = ""
@@ -80,7 +119,7 @@ class Deck(CardPile):
         CardPile.__init__(self)
         for suit in SUITS:
             for card in CARDS:
-                self.cards.append(Card(card, suit))
+                self.add(Card(card, suit))
 
     def shuffle(self):
         random.shuffle(self.cards)
