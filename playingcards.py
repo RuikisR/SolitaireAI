@@ -14,12 +14,12 @@ class Card():
             self.suit_name = SUITS[suit]
             self.type = self.suit % 2
             # Assumes SUIT suits alternate type eg. Black and Red
-            self.known = False
+            self.known = True
         else:
             self.name = None
             self.suit_name = None
             self.type = None
-            self.known = True
+            self.known = False
         self.hidden = hidden
 
     def is_hidden(self):
@@ -82,12 +82,14 @@ class CardPile():
                     hidden_cards.append(card)
         return hidden_cards
 
-    def pick_card(self, target_card):
+    def search_card(self, target_card):
         for card in self.cards:
-            if target_card.value == card.value:
-                if target_card.suit == card.suit:
-                    self.cards.remove(card)
-                    return card
+            if (card.suit == target_card.suit and
+                    card.value == target_card.value):
+                self.cards.remove(card)
+                if card.is_hidden():
+                    card.toggle_hidden()
+                return card
 
     def __str__(self):
         string = ""

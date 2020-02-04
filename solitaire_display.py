@@ -3,6 +3,9 @@ from pygame.locals import *
 import os
 import solitaire_game
 from solitaire_game import TABLEAU_OFFSET, FOUNDATION_OFFSET
+import solitaire_mcts
+import threading
+from queue import deque
 
 
 INITIAL_HEIGHT = 900
@@ -18,6 +21,7 @@ CARD_BACK = pygame.image.load(os.path.join(DATA, "cardBack_blue5.png"))
 CARD_SIZE = CARD_BACK.get_rect().size
 CARD_WIDTH = CARD_SIZE[0]
 CARD_HEIGHT = CARD_SIZE[1]
+AUTO_PLAY = True
 
 pygame.init()
 screen = pygame.display.set_mode((INITAL_WIDTH, INITIAL_HEIGHT))
@@ -40,11 +44,13 @@ move_src = None
 move_dst = None
 move_amount = None
 
+calculating = False
+
 
 # Displaying the cards and updating the the sprite list
 def display_game(game):
     screen.fill(GREEN)
-    if not game.won:
+    if not game.is_game_over():
         draw_deck(game)
         draw_foundations(game)
         draw_tableaus(game)
@@ -97,7 +103,7 @@ def draw_tableaus(game):
 
         for j, card in enumerate(tableau):
             sprite_y = MARGIN * (2 + j) + CARD_HEIGHT
-
+            tableau_sprite = None
             if card is tableau[-1]:
                 tableau_sprite = pygame.Rect((sprite_x, sprite_y), CARD_SIZE)
 
@@ -176,17 +182,33 @@ def quick_move(game, src, amount):
         game.make_move(possible_moves[0])
 
 
-if __name__ == "__main__":
+def get_best_move(game):
+    tree = solitaire_mcts.Solitaire_MCTS(game)
+    return tree.best_move(1)
+
+
+def auto_play(game, queue):
+    move = solitaire_mcts.Solitaire_MCTS(solitaire).best_move(10)
+    queue.append(move)
+    print("Move queued")
+
+
+def main():
+    global screen_sprites, solitaire, move_src, move_dst
+    global move_amount, highlight_selection, card_images
+    global calculating
+    ai = threading.Thread()
+    move_q = deque()
     while(True):
         screen_sprites = {}
         display_game(solitaire)
-        # pygame.event.pump()
-        event = pygame.event.wait()
-        game_finished = solitaire.won
+        event = pygame.event.poll()
+        game_finished = solitaire.is_game_over()
         if event.type == QUIT:
             pygame.display.quit()
             quit()
         elif event.type == MOUSEBUTTONDOWN:
+            # print(f"Best move: {get_best_move(solitaire)}")
             if game_finished:
                 solitaire = solitaire_game.Solitaire()
                 card_images = {}  # Mapping each card to its image
@@ -195,8 +217,7 @@ if __name__ == "__main__":
                               DATA, f"card{card.suit_name}s{card.name}.png"))
                     card_images[card] = (pygame.image.load(target))
                 solitaire.deal_game()
-            else:
-                mouse_pos = pygame.mouse.get_pos()
+            elif not AUTO_PLAY:
                 clicked_card = clicked_id()
                 move = None
                 if clicked_card:
@@ -209,4 +230,17 @@ if __name__ == "__main__":
                     move_src = None
                     move_dst = None
                     move_amount = None
+        if len(move_q) > 0 and calculating:
+            solitaire.make_move(move_q.pop())
+            calculating = False
+        if AUTO_PLAY and not calculating:
+            calculating = True
+            ai = threading.Thread(target=auto_play,
+                                  args=(solitaire, move_q, ),
+                                  daemon=True)
+            ai.start()
         clock.tick(60)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,5 @@
 from playingcards import *
-import copy
+
 
 TABLEAU_OFFSET = 2
 FOUNDATION_OFFSET = 9
@@ -11,7 +11,9 @@ class Solitaire():
     def __init__(self):
         self.deck = Deck()
         self.deck.shuffle()
-        self.won = False
+        self.move_counter = 0
+        self.result = 0
+        self.prev = {i: 0 for i in range(13)}
 
         self.foundations = []
         for suit in SUITS:
@@ -25,7 +27,7 @@ class Solitaire():
 
         self.waste = CardPile()
 
-        self.valid_moves = []
+        self._valid_moves = []
         # Empty pile for waste
 
         ''' Not Used but could be useful
@@ -42,18 +44,26 @@ class Solitaire():
         # 2-8 -> Tableaus
         # 9-12 -> Foundations
 
+    @property
+    def valid_moves(self):
+        if self.has_changed():
+            self.update_prev()
+            self.update_valid_moves()
+        return self._valid_moves
+
     def deal_game(self):
         for i, tableau in enumerate(self.tableaus):
             self.move_cards(self.deck, tableau, i + 1)
             tableau.top_card().toggle_hidden()
             # Calculates number of cards for each tableau and reveals top card
-        self.update_valid_moves()
 
     def draw_card(self):
         # Reveals top card of deck and places it on top of waste
         if len(self.deck) > 0:
-            self.waste.add(self.deck.draw())
-            self.waste.top_card().toggle_hidden()
+            card = self.deck.draw()
+            self.waste.add(card)
+            if card.is_hidden():
+                card.toggle_hidden()
         else:
             self.reset_waste()
 
@@ -73,11 +83,9 @@ class Solitaire():
     def update_valid_moves(self):
         # Moves take the form of tuples
         # (src_id, dst_id, number_of_cards) as given in id_map
-        self.valid_moves = (self.valid_deck_moves()
-                            + self.valid_foundation_moves()
-                            + self.valid_tableau_moves())
-        if len(self.valid_moves) == 0:
-            self.won = True
+        self._valid_moves = (self.valid_deck_moves()
+                             + self.valid_foundation_moves()
+                             + self.valid_tableau_moves())
 
     def valid_deck_moves(self):
         valid_moves = []
@@ -89,6 +97,16 @@ class Solitaire():
         if len(self.waste) > 0:
             src_id = 1
             hand_card = self.waste.top_card()
+
+            for i, foundation in enumerate(self.foundations):
+                foundation_top = foundation.top_card()
+                if (len(foundation) == 0 and hand_card.value == ACE
+                        or (len(foundation) > 0
+                            and hand_card.value == foundation_top.value + 1
+                            and hand_card.suit == foundation_top.suit)):
+                    dst_id = i + FOUNDATION_OFFSET
+                    valid_moves.append((src_id, dst_id, 1))
+                    # Checking valid moves from waste to foundations
 
             for i, tableau in enumerate(self.tableaus):
                 tableau_top = tableau.top_card()
@@ -102,15 +120,6 @@ class Solitaire():
                     valid_moves.append((src_id, dst_id, 1))
                     # Checking valid moves from waste to a tableau
 
-            for i, foundation in enumerate(self.foundations):
-                foundation_top = foundation.top_card()
-                if (len(foundation) == 0 and hand_card.value == ACE
-                        or (len(foundation) > 0
-                            and hand_card.value == foundation_top.value + 1
-                            and hand_card.suit == foundation_top.suit)):
-                    dst_id = i + FOUNDATION_OFFSET
-                    valid_moves.append((src_id, dst_id, 1))
-                    # Checking valid moves from waste to foundations
         return valid_moves
 
     def valid_foundation_moves(self):
@@ -171,6 +180,15 @@ class Solitaire():
                                     # Valid tableau to tableau moves
         return valid_moves
 
+    def is_game_over(self):
+        if len(self.valid_moves) == 0:
+            self.result = 1
+            return True
+        elif self.move_counter >= 256:
+            self.result = -1
+            return True
+        return False
+
     def make_move(self, move):
         if move in self.valid_moves:
             src_id, dst_id, amount = move
@@ -200,7 +218,8 @@ class Solitaire():
                                                  + len(self.foundations)):
                 src = self.foundations[src_id - FOUNDATION_OFFSET]
                 dst.add(src.draw())
-        self.update_valid_moves()
+
+            self.move_counter += 1
 
     def get_revealed_cards(self):
         revealed_cards = []
@@ -216,24 +235,32 @@ class Solitaire():
         hidden_cards = Deck()
         revealed_cards = self.get_revealed_cards()
         for card in revealed_cards:
-            hidden_cards.pick_card(card)
+            hidden_cards.search_card(card)
         return hidden_cards
 
-    def min_copy(self):
-        instance = Solitaire()
-        instance.deck = copy.deepcopy(self.deck)
-        instance.waste = copy.deepcopy(self.waste)
-        instance.foundations = copy.deepcopy(self.foundations)
+    def has_changed(self):
+        if len(self.deck) != self.prev[0]:
+            return True
+        if len(self.waste) != self.prev[1]:
+            return True
         for i, tableau in enumerate(self.tableaus):
-            for card in tableau:
-                if card.is_hidden():
-                    instance.tableaus[i].add(Card())
-                else:
-                    instance.tableaus[i].add(copy.deepcopy(card))
-        return instance
+            if len(tableau) != self.prev[i + TABLEAU_OFFSET]:
+                return True
+        for i, foundation in enumerate(self.foundations):
+            if len(foundation) != self.prev[i + FOUNDATION_OFFSET]:
+                return True
+        return False
+
+    def update_prev(self):
+        self.prev[0] = len(self.deck)
+        self.prev[1] = len(self.waste)
+        for i, t in enumerate(self.tableaus):
+            self.prev[i + TABLEAU_OFFSET] = len(t)
+        for i, f in enumerate(self.foundations):
+            self.prev[i + FOUNDATION_OFFSET] = len(f)
 
     def __str__(self):
-        string = "---Game Setup---\n"
+        string = f"---Game Setup---\nMove number: {self.move_counter}\n"
         string += "\nDeck:\n"
         for card in self.deck:
             string += f"{card} - hidden: {card.is_hidden()}\n"
@@ -249,14 +276,3 @@ class Solitaire():
             for card in foundation:
                 string += f"{card} - hidden: {card.is_hidden()}\n"
         return string
-
-
-# Test bench
-if __name__ == "__main__":
-    game = Solitaire()
-    game.deal_game()
-    game.draw_card()
-    print(game)
-    thing = game.min_copy()
-    print(thing)
-    print(thing.get_hidden_cards())
